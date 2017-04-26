@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+// http://www.topherlee.com/software/pcm-tut-wavformat.html
 struct  WAV_HEADER
 {
     /* RIFF Chunk Descriptor */
