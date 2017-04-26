@@ -1,5 +1,7 @@
 # WavDecoder
 
 ## TODO
+- WavReader is not tested, make sure it works with the two samples provided
 - Debug Costas Loop parameters & compute defaults (fnat, zeta)
-- Expand readWav for other formats and number of channels (without using external libraries)
+- Expand decodeWavFormat for more numbers of channels (without using external libraries)
+
