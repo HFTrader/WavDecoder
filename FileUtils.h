@@ -32,7 +32,7 @@ bool readFile( const std::string& filename, ByteArray& bytes )
         offset += nb;
     }
     ::close( fd );
-    //printf( "Read %ld bytes from %s\n", offset, filename.c_str() );
+    printf( "Read %ld bytes from %s\n", offset, filename.c_str() );
     return true;
 }
 
@@ -46,12 +46,14 @@ bool writeFile( const std::string& filename, const ByteArray& bytes ) {
     }
     uint64_t offset = 0;
     uint64_t bufsize = 4*4096;
+    uint64_t left = bytes.size();
     while ( offset < bytes.size() ) {
-        int64_t nb = ::write( fd, &bytes[offset], bufsize );
+        int64_t nb = ::write( fd, &bytes[offset], left>bufsize ? bufsize : left );
         if ( nb<=0 ) break;
         offset += nb;
+        left -= nb;
     }
     ::close(fd);
-    //printf( "Wrote %ld bytes to %s\n", offset, filename.c_str() );
+    printf( "Wrote %ld bytes to %s\n", offset, filename.c_str() );
     return true;
 }

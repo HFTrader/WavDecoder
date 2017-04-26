@@ -23,9 +23,10 @@ struct CostasLoop
       lock_detector(fs_hz),
       lock_rc(0.01*fc_hz,fs_hz)
     {
+        // TODO - these parameters need to be better calculated
         if ( qual<0 ) qual = 1.0/sqrt(2.0);
         if ( zeta<0 ) zeta = 1.0/sqrt(2.0);
-        if ( fcut<0 ) fcut = 0.6*fc_hz;
+        if ( fcut<0 ) fcut = 1.2*fc_hz;
         if ( fnat<0 ) fnat = 0.2*fc_hz;
         if ( lpcut<0 ) lpcut = 0.1*fc_hz;
 
