@@ -1,7 +1,6 @@
 #pragma once
-#include "FileUtils.h"
-
 #include <stdint.h>
+#include "FileUtils.h"
 
 // http://www.topherlee.com/software/pcm-tut-wavformat.html
 struct  WAV_HEADER
