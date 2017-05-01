@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdio.h>
 #include <math.h>
 
 struct LowPassFilter {
@@ -42,15 +43,16 @@ struct BiquadLowPassFilter
         double alpha = sn/(2.0*Q);
         double beta = sqrt(A+A);
 
-        init(A, omega, sn, cs, alpha, beta);
+        init_priv(A, omega, sn, cs, alpha, beta);
         b0 /= a0;
         b1 /= a0;
         b2 /= a0;
         a1 /= a0;
         a2 /= a0;
+	//printf( "Biquad: a:(%f,%f,%f) b:(%f,%f,%f)\n", a0, a1, a2, b0, b1, b2 );
     }
     
-    double add( double sig ) {
+    double add( double x0 ) {
         double y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
         x2 = x1;
         x1 = x0;
@@ -66,7 +68,7 @@ struct BiquadLowPassFilter
         y1 = 0;
     }
 
-    void init(double A, double omega, double sn, double cs, double alpha, double beta) {
+    void init_priv(double A, double omega, double sn, double cs, double alpha, double beta) {
         b0 = (1.0 - cs) / 2.0;
         b1 =  1.0 - cs;
         b2 = (1.0 - cs) / 2.0;
@@ -74,7 +76,8 @@ struct BiquadLowPassFilter
         a1 = -2.0 * cs;
         a2 =  1.0 - alpha;
     }
-    
-    double a0,a1,a2,b0,b1,b2,x0,x1,x2,y1,y2;
+  
+private:
+    double a0,a1,a2,b0,b1,b2,x1,x2,y1,y2;
 };
 

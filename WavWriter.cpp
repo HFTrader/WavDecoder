@@ -16,7 +16,7 @@ const double PHASE_CARRIER_INCR = (2*M_PI*CARRIER_HZ)/SAMPLE_HZ;
 const double PHASE_CLOCK_INCR = (2*M_PI*(CARRIER_HZ+DATAOFF_HZ))/SAMPLE_HZ;
 const double PHASE_DATA_INCR = (2*M_PI*(CARRIER_HZ+2*DATAOFF_HZ))/SAMPLE_HZ;
 const double ATTENUATION = 0.5;
- 
+
 bool encodeSound( const ByteArray& arr, SampleArray& wav ) 
 {
   const uint32_t FADE_SAMPLES = (FADE_CYCLES*SAMPLE_HZ)/CARRIER_HZ;
@@ -42,7 +42,8 @@ bool encodeSound( const ByteArray& arr, SampleArray& wav )
             double phase_clock_incr = (target_phase_clock-phase_clock_off)/FADE_SAMPLES;
     
             for ( uint32_t nc =0; nc<FADE_SAMPLES; ++nc ) {
-                double val = ( sin( phase_carrier ) + sin( phase_data + phase_data_off ) + sin( phase_clock + phase_clock_off ) )*0.25;
+	      //double val = ( sin( phase_carrier ) + sin( phase_data + phase_data_off ) + sin( phase_clock + phase_clock_off ) )*0.25;
+		double val = ( sin( phase_carrier ) )*0.25;
                 wav[cnt++] = ATTENUATION*val*32768;
                 phase_carrier += PHASE_CARRIER_INCR;
                 phase_clock += PHASE_CLOCK_INCR;
@@ -54,7 +55,8 @@ bool encodeSound( const ByteArray& arr, SampleArray& wav )
             target_phase_clock = M_PI/2;
             phase_clock_incr = (target_phase_clock - phase_clock_off)/DATA_SAMPLES;
             for ( uint32_t nc =0; nc<DATA_SAMPLES; ++nc ) {
-                double val = ( sin( phase_carrier ) + sin( phase_data + phase_data_off ) + sin( phase_clock + phase_clock_off ) )*0.25;
+	      //double val = ( sin( phase_carrier ) + sin( phase_data + phase_data_off ) + sin( phase_clock + phase_clock_off ) )*0.25;
+	      double val = ( sin( phase_carrier ) );
                 wav[cnt++] = ATTENUATION*val*32768;
                 phase_carrier += PHASE_CARRIER_INCR;
                 phase_clock += PHASE_CLOCK_INCR;

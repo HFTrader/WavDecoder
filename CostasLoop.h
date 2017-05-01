@@ -8,31 +8,30 @@
 struct CostasLoop 
 {
     CostasLoop( 
-        double fc_hz, // Carrier frequency
-        double fs_hz, // Sampling frequency
+        double fc_hz,          // Carrier frequency (normalized for fs=1)
         double qual = -1,      // Quality factor of in and out of phase low pass filters
-        double fcut = -1,          // Cutoff frequency for the in and out of phase lpf [Hz] 
-                                          // Determined by separate program which I will also include 
-                                          // In CostasLoop directory - it was written in Python
-        double fnat = -1,          // Natural Frequency of this control system [Hz]
-        double lpcut = -1,         // Cutoff frequency for frequency smoothing
-        double zeta = -1  // Damping ratio of this control system
+        double fcut = -1,      // Cutoff frequency for the in and out of phase lpf [Hz] 
+                               // Determined by separate program which I will also include 
+                               // In CostasLoop directory - it was written in Python
+        double fnat = -1,      // Natural Frequency of this control system [Hz]
+        double lpcut = -1,     // Cutoff frequency for frequency smoothing
+        double zeta = -1       // Damping ratio of this control system
     ) 
-    : fc(fc_hz), fs(fs_hz), 
-      amp(fs_hz), vco(fs_hz),
-      lock_detector(fs_hz),
-      lock_rc(0.01*fc_hz,fs_hz)
+    : fc(fc_hz), 
+      amp(1.0), vco(1.0),
+      lock_detector(fc_hz,1.0),
+      lock_rc(0.01*fc_hz,1.0)
     {
         // TODO - these parameters need to be better calculated
         if ( qual<0 ) qual = 1.0/sqrt(2.0);
         if ( zeta<0 ) zeta = 1.0/sqrt(2.0);
-        if ( fcut<0 ) fcut = 1.2*fc_hz;
-        if ( fnat<0 ) fnat = 0.2*fc_hz;
-        if ( lpcut<0 ) lpcut = 0.1*fc_hz;
+        if ( fcut<0 ) fcut = 0.6*fc;
+        if ( fnat<0 ) fnat = 0.2*fc;
+        if ( lpcut<0 ) lpcut = 0.1*fc;
 
-        ilp.init(qual,fcut,fs_hz);
-        qlp.init(qual,fcut,fs_hz); 
-        flp.init(qual,lpcut,fs_hz );
+        ilp.init(qual,fcut,1.0);
+        qlp.init(qual,fcut,1.0); 
+        flp.init(qual,lpcut,1.0);
 
         // The variable G and a so that the loop achieves the above responses
         G = 4.0*M_PI*zeta*fnat;
@@ -41,7 +40,8 @@ struct CostasLoop
     
         // Variables to help generate measure frequency
         last_vco_phase = 0.0;
-        HZ_PER_RAD = fs/2.0/M_PI;
+        HZ_PER_RAD = 1.0/2.0/M_PI;
+	free_phase = 0;
 
         // Lock Detector
         reset();
@@ -68,13 +68,39 @@ struct CostasLoop
         double s6 = s3 + s5;
         error = s2;
         vco.add(inc + s6);
+	free_phase += inc;
+	phase = vco_phase - free_phase;
+	if ( phase>=2*M_PI ) {
+	  uint64_t n = phase/(2*M_PI);
+	  phase -= n*2*M_PI;
+	  free_phase += n*2*M_PI;
+	  printf( "Adjusting forward %ld periods\n", n );
+	}
+	else if ( phase<0 ) {
+	  uint64_t n = -phase/(2*M_PI) + 1;
+	  phase += n*2*M_PI;
+	  free_phase -= n*2*M_PI;
+	  printf( "Adjusting backward %ld periods\n", n );
+	}
+	
+	  
+	int64_t n = (phase-M_PI)/M_PI;
+	if ( n<0 || n>=2 ) { 
+	  phase -= n*M_PI;
+	  free_phase += n*2*M_PI;
+	}
 
         double lockval = lock_detector.add(in_phase, qu_phase);
         lock = lock_rc.add(lockval);        
 
-        double phase_der = (vco_phase - last_vco_phase) * HZ_PER_RAD;
-        freq = flp.add(phase_der);
+        double phase_derivative = (vco_phase - last_vco_phase) * HZ_PER_RAD;
+        freq = flp.add(phase_derivative);
 
+	//printf( "Input:%7.3f vco:%5.0f  s/c:%8.6f %8.6f  Phase: %7.6f %7.6f\n",
+	//	input, vco_phase*180/M_PI, cos_vco, sin_vco, in_phase, qu_phase );
+	//printf( "Input:%7.3f s2:%f s3:%f s4:%f s5:%f s6:%f Phase:%f Freq:%f\n",
+	//	input, s2, s3, s4, s5, s6, phase*180/M_PI, freq );
+	
         last_vco_phase = vco_phase;
         return in_phase;    
     }
@@ -91,7 +117,6 @@ struct CostasLoop
     }
     
     // Constants
-    double fs;
     double fc;
     double G;
     double a;
@@ -102,6 +127,8 @@ struct CostasLoop
     double error;
     double lock;
     double freq;
+    double phase;
+    double free_phase;
     
     // State
     double last_vco_phase;

@@ -24,13 +24,7 @@ struct BandPassFilter
             b[1] = b1/a0;
             b[2] = b2/a0;
 
-            y[0] = 0.0;
-            y[1] = 0.0;
-            y[2] = 0.0;
-
-            x[0] = 0.0;
-            x[1] = 0.0;
-            x[2] = 0.0;
+	    reset();
         }
         
         double add(double sig) {
@@ -82,20 +76,20 @@ struct BandPassFilter
     {14, 7, {0.50, 0.53, 0.59, 0.71, 0.94, 1.51, 4.47, 0.00, 0.00}},
     {16, 8, {0.50, 0.52, 0.57, 0.65, 0.79, 1.06, 1.72, 5.10, 0.00}} };
     
-    static inline double warp(double fc, double fs)
+    static inline double warp(double fc)
     {
-        return 2.0*fs*tan(0.5*2.0*M_PI*fc/fs);
+        return 2.0*tan(0.5*2.0*M_PI*fc);
     }
 
-    BandPassFilter( double fs, double fc, double bw, int filter_order ) 
+    BandPassFilter( double fc, double bw, int filter_order ) 
     : order(filter_order) 
     {
         if (order % 2 || order < 2) order = 2;
-        double wc = warp(fc, fs);
-        double w1 = warp(fc - bw/2.0, fs);
-        double w2 = warp(fc + bw/2.0, fs);
+        double wc = warp(fc);
+        double w1 = warp(fc - bw/2.0);
+        double w2 = warp(fc + bw/2.0);
         double Q = wc/(w2 - w1);
-        double D = 2.0*fs;
+        double D = 2.0;
         filters.resize(order);
         double q_lp, a, b, q, wo1, wo2, A1, B1, C1, A2, B2, C2;
         Poles& poles( q_poles[order/2-1] );
@@ -123,7 +117,7 @@ struct BandPassFilter
             filters[k++].init(A2,B2,C2,D);
         }
     }
-    ~BandPassFilter();
+    ~BandPassFilter() {};
 
     double add(double sig) {
         for ( auto& f : filters ) sig = f.add(sig);

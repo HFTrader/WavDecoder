@@ -12,20 +12,17 @@ const uint32_t DATA_CYCLES = 20;
 
 bool decodeSound( const SampleArray& wav, ByteArray& out, double SAMPLE_HZ ) 
 {
-  double PHASE_CARRIER_INCR = (2*M_PI*CARRIER_HZ)/SAMPLE_HZ;
-  double PHASE_CLOCK_INCR = (2*M_PI*(CARRIER_HZ+DATAOFF_HZ))/SAMPLE_HZ;
-  double PHASE_DATA_INCR = (2*M_PI*(CARRIER_HZ+2*DATAOFF_HZ))/SAMPLE_HZ;
   const uint32_t CARRIER_SAMPLES =  SAMPLE_HZ/CARRIER_HZ;
   uint32_t counter = 0;
   uint32_t cycle = 0;
-  CostasLoop costas( CARRIER_HZ, SAMPLE_HZ );
+  CostasLoop costas( CARRIER_HZ/SAMPLE_HZ );
   for ( uint32_t j=0; j<wav.size(); ++j ) {
     double sample = double(wav[j])/65536;
     costas.add( sample );
     if ( ++counter >= CARRIER_SAMPLES ) {
       counter -= CARRIER_SAMPLES;
-      printf( "Cycle:%4d  Costas: %f %f %f\n",
-	      cycle++, costas.freq, costas.error, costas.lock );
+      printf( "Cycle:%4d  Freq:%5.1f  Phase:%3.0f Error:%f\n",
+	      cycle++, costas.freq*SAMPLE_HZ, costas.phase*180/M_PI, costas.error );
     }
   }
 }
