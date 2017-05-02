@@ -7,6 +7,7 @@ message( STATUS "Selected toolchain [${CMAKE_CXX_COMPILER_ID}] on [${CMAKE_SYSTE
 message( STATUS "CMake Binary dir: ${CMAKE_BINARY_DIR}")
 set( HEADERS BandPassFilters.h FileUtils.h LockDetector.h Integrators.h LowPassFilters.h WavFormat.h CostasLoop.h )
 
+add_executable( testWaveDecoder testWaveDecoder.cpp )
 add_executable( WavReader WavReader.cpp )
 add_executable( WavWriter WavWriter.cpp )
 add_executable( testBandFilters testBandFilters.cpp )

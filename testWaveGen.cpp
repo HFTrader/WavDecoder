@@ -24,8 +24,8 @@ int main()
   uint32_t transition_cycles = fs/fc1*1;
   
   CarrierGenerator carrier( fc1/fs, 1.0 );
-  PhaseWaveGenerator pattern( fc2/fs, 1.0, transition_cycles, data_cycles, data_cycles,
-			      []( PhaseWaveGenerator::Data& d ) {
+  DataWaveGenerator pattern( fc2/fs, 1.0, transition_cycles, data_cycles, data_cycles,
+			      []( DataWaveGenerator::Data& d ) {
 				d.val = 0b10101010;
 				d.bits = 8;
 			      });

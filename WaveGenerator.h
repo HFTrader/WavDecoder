@@ -6,6 +6,13 @@
 #include <stdint.h>
 #include <math.h>
 
+#include "CordicGenerator.h"
+
+
+/*******************************************************************
+Generates a sine wave with the provided amplitude, phase and frequency
+Takes care of C1 continuity transitions
+*******************************************************************/
 class WaveGenerator {
 public:
   struct State {
@@ -17,7 +24,7 @@ public:
   typedef void (FType)( State& );
   
   WaveGenerator( double fc, std::function<FType>&& fn )
-    : _fn( fn ), _fc( fc )
+    : _fn( fn ), _fc( fc ), _cordic( fc )
   {
     _target.phase = 0;
     _target.amplitude = 1;
@@ -26,29 +33,20 @@ public:
     _fn( _target );
     _amp = _target.amplitude;
     _amp_inc = 0;
-
-    // Cordic algo parameters
-    _cs = ::cos( 2*M_PI*fc );
-    _sn = ::sin( 2*M_PI*fc );
-    _x = 0;
-    _y = 1;
   }
 
   double step() {
     if ( _countdown==0 ) {
       recalc();
     }
-    double value = _x*_amp; 
+    double value = _amp*_cordic.real(); 
     advance();
     return value;
   }
 
   void advance() {
     if ( _countdown>0 ) _countdown--;
-    double tx = _x*_cs + _y*_sn;
-    double ty = _y*_cs - _x*_sn;
-    _x = tx;
-    _y = ty;
+    _cordic.advance();
     _amp += _amp_inc;
   }
 
@@ -67,22 +65,23 @@ private:
       _countdown = _target.steps;
       _amp_inc = (_target.amplitude - _amp)/_target.steps;
     }
-    double delta_phase = 2*M_PI*_fc + addl_phase_per_step;
-    _cs = ::cos( delta_phase );
-    _sn = ::sin( delta_phase );
+    _cordic.set_freq( _fc + addl_phase_per_step/(2*M_PI) );
   }
   
   double _fc;
   double _amp;
   double _amp_inc;  
   State _target;
-  double _cs, _sn, _x, _y;
+  CordicGenerator _cordic;
+  //double _cs, _sn, _x, _y;
   double _value;
   uint64_t _countdown;
   std::function< FType > _fn;
 };
 
-
+/*******************************************************************
+  Generates a simple sine wave
+*******************************************************************/
 class CarrierGenerator : public WaveGenerator {
 public:
   CarrierGenerator( double fc, double amplitude )
@@ -93,8 +92,10 @@ public:
     } ) {};
 };
 
-
-class TransitionWaveGenerator : public WaveGenerator {
+/*******************************************************************
+  Generates a wave with the phase supplied
+*******************************************************************/
+class PhaseWaveGenerator : public WaveGenerator {
 public:
   struct Cycle {
     uint32_t transition_cycles;
@@ -103,7 +104,7 @@ public:
     double   phase;
   };
   typedef void (CycleGen)( Cycle& );
-  TransitionWaveGenerator( double fc, std::function<CycleGen>&& gen )
+  PhaseWaveGenerator( double fc, std::function<CycleGen>&& gen )
     : WaveGenerator( fc, [gen,this]( WaveGenerator::State& t ) {
 	switch ( _stage ) { 
 	case 0:  // trans -> ON
@@ -131,23 +132,25 @@ private:
 
 
 
-
-class PhaseWaveGenerator : public TransitionWaveGenerator {
+/**
+Generates a waves that carries binary data
+*/
+class DataWaveGenerator : public PhaseWaveGenerator {
 public:
   struct Data {
     uint32_t bits;
     uint32_t val;
   };
   typedef void (DataGen)( Data& );
-  PhaseWaveGenerator( double fc,
+  DataWaveGenerator( double fc,
 		      double amplitude,
 		      uint32_t transition_cycles,
 		      uint32_t data_on_cycles,
 		      uint32_t data_off_cycles,
 		      std::function<DataGen>&& gen )
-    : TransitionWaveGenerator( fc,
+    : PhaseWaveGenerator( fc,
        [gen,this,amplitude,transition_cycles,data_on_cycles,data_off_cycles]
-			       ( TransitionWaveGenerator::Cycle& c ) {
+			       ( PhaseWaveGenerator::Cycle& c ) {
 	c.amplitude = amplitude;
 	c.transition_cycles = transition_cycles;
 	if ( _off_cycle ) {
