@@ -31,7 +31,7 @@ int main()
 			      });
  
   double Q = 1.0/sqrt(2.0);
-  BiquadLowPassFilter bq( Q, (fc1+fc2)/2, fs );
+  BiquadLowPassFilter bq( Q, 0.5*(fc1+fc2)/fs );
   BandPassFilter bp( (fc1+fc2)/fs, 1.5*(fc2-fc1)/fs, 4 );
   DCTArray dct_bq( freqs );
   DCTArray dct_bp( freqs );

@@ -31,13 +31,13 @@ struct BiquadLowPassFilter
 {
     BiquadLowPassFilter() {}
 
-    BiquadLowPassFilter(double Q, double fc, double fs) {
-        init( Q, fc, fs );
+    BiquadLowPassFilter(double Q, double fc ) {
+        init( Q, fc );
     }
     
-    void init( double Q, double fc, double fs ) {
+    void init( double Q, double fc ) {
         double A = 1.0;
-        double omega = 2.0*M_PI*fc/fs;
+        double omega = 2.0*M_PI*fc;
         double sn = ::sin(omega);
         double cs = ::cos(omega);
         double alpha = sn/(2.0*Q);
@@ -49,7 +49,6 @@ struct BiquadLowPassFilter
         b2 /= a0;
         a1 /= a0;
         a2 /= a0;
-	//printf( "Biquad: a:(%f,%f,%f) b:(%f,%f,%f)\n", a0, a1, a2, b0, b1, b2 );
     }
     
     double add( double x0 ) {

@@ -2,9 +2,9 @@
 #include "LowPassFilters.h"
 
 struct LockDetector {
-    LockDetector( double fc, double fs, double threshold = 0.5 ) 
-      : in_phase_lp(0.707106, fc, fs),
-        qu_phase_lp(0.707106, fc, fs)
+    LockDetector( double fc, double threshold = 0.5 ) 
+      : in_phase_lp(0.707106, fc),
+        qu_phase_lp(0.707106, fc)
     {
         thresh = threshold;
     }

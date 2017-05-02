@@ -19,7 +19,7 @@ struct CostasLoop
     ) 
     : fc(fc_hz), 
       amp(1.0), vco(1.0),
-      lock_detector(fc_hz,1.0),
+      lock_detector(fc_hz),
       lock_rc(0.01*fc_hz,1.0)
     {
         // TODO - these parameters need to be better calculated
@@ -29,9 +29,9 @@ struct CostasLoop
         if ( fnat<0 ) fnat = 0.2*fc;
         if ( lpcut<0 ) lpcut = 0.1*fc;
 
-        ilp.init(qual,fcut,1.0);
-        qlp.init(qual,fcut,1.0); 
-        flp.init(qual,lpcut,1.0);
+        ilp.init(qual,fcut);
+        qlp.init(qual,fcut); 
+        flp.init(qual,lpcut);
 
         // The variable G and a so that the loop achieves the above responses
         G = 4.0*M_PI*zeta*fnat;

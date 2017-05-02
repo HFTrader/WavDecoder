@@ -6,43 +6,68 @@
 class CordicQueueIntegrator
 {
 public: 
-  CordicQueueIntegrator( uint32_t samples, double fc )
+  CordicQueueIntegrator( uint32_t num_samples, double fc )
   {
     _cordic.init( fc );
-    numsamples = samples;
-    phaseinc = 2*M_PI*fc;
-    counter = 0;
-    sin_sum = 0;
-    cos_sum = 0;
-    sin_samples.resize( numsamples, 0 );
-    cos_samples.resize( numsamples, 0 );    
+    _num_samples = num_samples;
+    _samples.resize( num_samples );
+    reset();
   }
+  
+  void reset() {
+    _counter = 0;
+    _sin_sum = 0;
+    _cos_sum = 0;     
+    _sq_sum = 0;
+    for ( Pair& p: _samples ) {
+        p.sin = p.cos = p.value = 0;
+    }
+    _ready = false;
+  }
+  
   void add( double sample ) {
     double sinval = _cordic.real()*sample;
     double cosval = _cordic.imag()*sample;
-    sin_sum += sinval - sin_samples[counter];
-    cos_sum += cosval - cos_samples[counter];
-    sin_samples[counter] = sinval;
-    cos_samples[counter] = cosval;
-    if ( ++counter >= numsamples ) counter = 0;
+    Pair& s( _samples[_counter] );
+    _sin_sum += sinval - s.sin;
+    _cos_sum += cosval - s.cos;
+    _sq_sum += sample*sample - s.value*s.value;
+    s.sin = sinval;
+    s.cos = cosval;
+    s.value = sample;
+    if ( ++_counter >= _num_samples ) { 
+        _ready = true; 
+        _counter = 0;
+    }
     _cordic.advance();
   }
+  
   double phase() const {
-    return ::atan2( sin_sum, cos_sum );
-  }
-  double level() const {
-    return ::sqrt( (sin_sum*sin_sum + cos_sum*cos_sum)/numsamples );
+    double ph = ::atan2( _sin_sum, _cos_sum );
+    if ( ph<0 ) ph += 2*M_PI;
+    return ph;
   }
   
+  double level() const {
+    if ( _ready || (_counter>0) ) 
+        return 2*(_sin_sum*_sin_sum + _cos_sum*_cos_sum)/(_num_samples*_sq_sum) ;
+    else 
+        return 0;
+  }
+  
+  bool ready() const {
+      return _ready;
+  }
 private:
   CordicGenerator _cordic;
-  double phaseinc;
-  double sin_sum;
-  double cos_sum;
-  uint32_t numsamples;
-  std::vector<double> sin_samples;
-  std::vector<double> cos_samples;
-  uint32_t counter;
+  double _sin_sum;
+  double _cos_sum;
+  double _sq_sum;
+  struct Pair { double value; double sin; double cos; };
+  std::vector< Pair > _samples;
+  uint32_t _counter;
+  bool _ready;
+  uint32_t _num_samples;
 };
 
 
@@ -55,30 +80,42 @@ struct CordicIntegrator
   }
   
   void reset() {
-    counter = 0;
-    sin_sum = 0;
-    cos_sum = 0;
+    _counter = 0;
+    _sin_sum = 0;
+    _cos_sum = 0;
+    _sq_sum = 0;
   }
   
   void add( double sample ) {
     double sinval = _cordic.real()*sample;
     double cosval = _cordic.imag()*sample;
-    sin_sum += sinval;
-    cos_sum += cosval;
-    ++counter;
+    _sin_sum += sinval;
+    _cos_sum += cosval;
+    _sq_sum += sample*sample;
+    ++_counter;
     _cordic.advance();
+    printf( "-- count:%d sample:%f sin:%f cos:%f sq:%f\n", _counter, sample, _sin_sum, _cos_sum, _sq_sum );
+  }
+  
+  uint32_t count() const {
+        return _counter;
   }
   
   double phase() const {
-    return ::atan2( sin_sum, cos_sum );
+    double ph = ::atan2( _sin_sum, _cos_sum );
+    if ( ph<0 ) ph += 2*M_PI;
+    return ph;
   }
   double level() const {
-    return ::sqrt( (sin_sum*sin_sum + cos_sum*cos_sum)/counter );
+    if ( _counter>0 ) 
+        return 2*(_sin_sum*_sin_sum + _cos_sum*_cos_sum)/(_counter*_sq_sum);
+    return -1;
   }
   
 private:
   CordicGenerator _cordic;
-  double sin_sum;
-  double cos_sum;
-  uint32_t counter;
+  double _sin_sum;
+  double _cos_sum;
+  double _sq_sum;
+  uint32_t _counter;
 };
